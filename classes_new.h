@@ -20,6 +20,7 @@ public:
         name = fields[1];
         bio = fields[2];
         manager_id = stoi(fields[3]);
+
     }
 
     //You may use this for debugging / showing the record to standard output. 
@@ -46,7 +47,12 @@ public:
         oss.write(name.c_str(), name.size()); // writes the name in binary form
         oss.write(reinterpret_cast<const char*>(&bio_len), sizeof(bio_len)); // // Writes the size of the Bio in binary format. 
         oss.write(bio.c_str(), bio.size()); // writes bio in binary form
+        // oss.write(reinterpret_cast<const char*>('$'), sizeof(const char));
+        return oss.str();
     }
+
+     
+
 };
 
 class page{ // Take a look at Figure 9.7 and read Section 9.6.2 [Page organization for variable length records] 
@@ -57,6 +63,9 @@ public:
     int cur_size = 0; // holds the current size of the page
 
     bool insert_record_into_page(Record r){  // Write a Record into your page (main memory)
+
+        cout<<r.id<<" "<<r.name<<endl;       
+
         
         if(cur_size + r.get_size() >= 4096){  // Checking if the current Record can be entered or not   
 
@@ -67,7 +76,14 @@ public:
             cur_size += r.get_size(); // Updating page size
 
             // TO_DO: update slot directory information
-
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            slot_directory.push_back(make_pair(cur_size-r.get_size(), r.get_size()));
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             return true;
         }
         
@@ -81,7 +97,11 @@ public:
 
         int offset = 0; // Used as an iterator to indicate where the next item should be stored. Section 9.6.2 contains information that will help you with the implementation.
 
-        for (const auto& record : records) { // Writing the records into the page_data
+
+
+
+
+       for (const auto& record : records) { // Writing the records into the page_data
             string serialized = record.serialize();
 
             memcpy(page_data + offset, serialized.c_str(), serialized.size());
@@ -89,14 +109,93 @@ public:
             offset += serialized.size();
         }
 
+        
         // TO_DO: Put a delimiter here to indicate slot directory starts from here 
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // string delimeter_dir ="$";
+        // memcpy(page_data + offset, delimeter_dir.c_str(), delimeter_dir.size());
+        // offset += delimeter_dir.size();
+
+        int Directory_Size = slot_directory.size();
+        // int Directory_entries = Directory_Size/2/4;
+
+        // cout<<"SlotSize: "<< Directory_Size<<endl;
+
+        // memcpy(page_data+4092, reinterpret_cast<const char*>(&offset), sizeof(offset));
+        // memcpy(page_data+4088, reinterpret_cast<const char*>(&Directory_Size), sizeof(Directory_Size));
+        
+        // cout<<page_data[4092]<<endl;
+        // cout<<page_data[4088]<<endl;
+        string rec_position;
+        string rec_size;
+        string commaspt;
+        string LeftBar;
+        string RightBar;
+
+        // cout<<"Offset1: "<<offset<<endl;
+
+        int reverse_offset = 4094;
+
+        string FreespacePoint =to_string(offset);
+        memcpy(page_data + (reverse_offset-FreespacePoint.size()), FreespacePoint.c_str(), FreespacePoint.size());
+        reverse_offset -= FreespacePoint.size();
+
+
+        string numofentries = to_string(Directory_Size);            
+        memcpy(page_data + (reverse_offset-numofentries.size()), numofentries.c_str(), numofentries.size());
+        reverse_offset -= numofentries.size();
+
 
         for (const auto& slots : slot_directory) { // TO_DO: Write the slot-directory information into page_data. You'll use slot-directory to retrieve record(s).
 
+            LeftBar =")";
+            memcpy(page_data + (reverse_offset-LeftBar.size()), LeftBar.c_str(), LeftBar.size());
+            reverse_offset -= LeftBar.size();
 
+            rec_size = to_string(slots.second);
+            memcpy(page_data + (reverse_offset-rec_size.size()), rec_size.c_str(), rec_size.size());
+            reverse_offset -= rec_size.size();
+
+            commaspt =",";
+            memcpy(page_data + (reverse_offset-commaspt.size()), commaspt.c_str(), commaspt.size());
+            reverse_offset -= commaspt.size();
+
+            rec_position = to_string(slots.first);
+            memcpy(page_data + (reverse_offset-rec_position.size()), rec_position.c_str(), rec_position.size());
+            reverse_offset -= rec_position.size();
+            
+            RightBar ="(";
+            memcpy(page_data + (reverse_offset-RightBar.size()), RightBar.c_str(), RightBar.size());
+            reverse_offset -= RightBar.size();
         }
+
+        string Numdelim ="#";
+        memcpy(page_data + (reverse_offset-Numdelim.size()), Numdelim.c_str(), Numdelim.size());
+        reverse_offset -= Numdelim.size();
+
+
+
+
+        // cout<<"Offset2: "<<offset<<endl;
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         
+        
+        // string newlin ="\n";
+        // memcpy(page_data + 4095, newlin.c_str(), newlin.size());
+        // reverse_offset -= newlin.size();
+
+
+        
+        
+ 
+      
         out.write(page_data, sizeof(page_data)); // Write the page_data to the EmployeeRelation.dat file 
+
 
     }
 
@@ -111,6 +210,13 @@ public:
             
             // TO_DO: You may process page_data (4 KB page) and put the information to the records and slot_directory (main memory).
             // TO_DO: You may modify this function to process the search for employee ID in the page you just loaded to main memory.
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
             return true;
         }
@@ -146,6 +252,15 @@ public:
         }
     }
 
+
+
+
+
+
+
+
+
+
     // Reads data from a CSV file and writes it to EmployeeRelation.dat
     void createFromFile(const string& csvFilename) {
         buffer.resize(3); // You can have maximum of 3 Pages.
@@ -163,28 +278,52 @@ public:
 
             while (getline(ss, item, ',')) {
                 fields.push_back(item);
+                // cout<<item<<endl;
+
             }
-            Record r = Record(fields);  //create a record object            
+
+            Record r = Record(fields);  //create a record object     
+
+            // cout<<r.id<<" "<<r.name<<endl;       
 
             
-            if (!buffer[page_number].insert_record_into_page(r)) { // inserting that record object to the current page
+            if (!buffer[page_number].insert_record_into_page(r)) { // inserting that record object to the current page //if record does not fit into page
                 
+
                 // Current page is full, move to the next page
                 page_number++;
  
                 if (page_number >= buffer.size()) {    // Checking if page limit has been reached.
                     
+                    // cout<<r.id<<" "<<r.name<<endl;       
+                    cout<<"IN the Page number bigger  or equal to bufferthen buffer.size   "<<"PAEG="<<page_number<<"    Buffersize="<<buffer.size()<<endl;
+
+
                     for (page& p : buffer) { // using write_into_data_file() to write the pages into the data file
                         p.write_into_data_file(data_file);
+                        // p.records.clear();////////////////
+                        // p.slot_directory.clear();////////
+                        // p.cur_size = 0; /////////////////
+                        cout<<"IN the Write to data file   "<<"PAEG="<<page_number<<endl;
                     }
                     page_number = 0; // Starting again from page 0
+                    
+
 
                 }
                 buffer[page_number].insert_record_into_page(r); // Reattempting the insertion of record 'r' into the newly created page
+            
+                // cout<<r.id<<" "<<r.name<<endl;       
+                
+            }
+            else{
+                cout<<"IN theelse "<<"PAEG="<<page_number<<"    Buffersize="<<buffer.size()<<endl;
+
             }
             
         }
         csvFile.close();  // Close the CSV file
+        
     }
 
     // Searches for an Employee ID in EmployeeRelation.dat
@@ -198,6 +337,13 @@ public:
         
         }
         // TO_DO: Print "Record not found" if no records match.
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     }
 };

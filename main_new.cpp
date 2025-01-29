@@ -18,6 +18,8 @@ using namespace std;
 
 int main(int argc, char* const argv[]) {
 
+    cout<<"hello World"<<endl;
+
     // Initialize the Storage Manager Class with the Binary .dat file name we want to create
     StorageManager manager("EmployeeRelation.dat");
 
